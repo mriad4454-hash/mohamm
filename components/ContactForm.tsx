@@ -2,20 +2,42 @@
 
 import { useState } from "react";
 
-export default function ContactForm() {
-  const [submitted, setSubmitted] = useState(false);
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/mzdnanbk";
 
-  function handleSubmit(e: React.FormEvent) {
+export default function ContactForm() {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle"
+  );
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: ربط هذا النموذج بخدمة إرسال فعلية (مثل Resend أو Formspree)
-    setSubmitted(true);
+    setStatus("sending");
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+
+      if (response.ok) {
+        setStatus("sent");
+        form.reset();
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
   }
 
-  if (submitted) {
+  if (status === "sent") {
     return (
       <div className="rounded-card bg-white/60 p-8 text-center">
         <p className="font-display font-semibold text-petrol-deep">
-          تم استلام طلبك.
+          تم إرسال طلبك بنجاح.
         </p>
         <p className="mt-2 text-sm text-ink/70">
           سيتم الرد خلال 24 ساعة عمل.
@@ -32,6 +54,7 @@ export default function ContactForm() {
         </label>
         <input
           id="name"
+          name="name"
           required
           className="w-full rounded-input border border-sand bg-paper px-4 py-3 text-sm outline-none focus:border-petrol-deep focus:ring-1 focus:ring-petrol-deep"
         />
@@ -42,6 +65,7 @@ export default function ContactForm() {
         </label>
         <input
           id="clinic"
+          name="clinic"
           required
           className="w-full rounded-input border border-sand bg-paper px-4 py-3 text-sm outline-none focus:border-petrol-deep focus:ring-1 focus:ring-petrol-deep"
         />
@@ -52,6 +76,7 @@ export default function ContactForm() {
         </label>
         <input
           id="whatsapp"
+          name="whatsapp"
           required
           type="tel"
           className="w-full rounded-input border border-sand bg-paper px-4 py-3 text-sm outline-none focus:border-petrol-deep focus:ring-1 focus:ring-petrol-deep"
@@ -63,15 +88,22 @@ export default function ContactForm() {
         </label>
         <textarea
           id="challenge"
+          name="challenge"
           rows={4}
           className="w-full rounded-input border border-sand bg-paper px-4 py-3 text-sm outline-none focus:border-petrol-deep focus:ring-1 focus:ring-petrol-deep"
         />
       </div>
+      {status === "error" && (
+        <p className="rounded-input bg-error/10 px-4 py-2 text-sm text-error">
+          حدث خطأ أثناء الإرسال. حاول مرة أخرى أو تواصل مباشرة عبر واتساب.
+        </p>
+      )}
       <button
         type="submit"
-        className="w-full rounded-btn bg-petrol-deep px-6 py-3 text-sm font-medium text-paper transition-colors hover:bg-petrol-light"
+        disabled={status === "sending"}
+        className="w-full rounded-btn bg-petrol-deep px-6 py-3 text-sm font-medium text-paper transition-colors hover:bg-petrol-light disabled:opacity-60"
       >
-        أرسل الطلب
+        {status === "sending" ? "جاري الإرسال..." : "أرسل الطلب"}
       </button>
       <p className="text-center text-xs text-ink/50">
         سيتم الرد خلال 24 ساعة عمل.
